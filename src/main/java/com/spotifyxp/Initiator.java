@@ -123,6 +123,13 @@ public class Initiator {
         }catch (Exception e) {
             ConsoleLogging.Throwable(e);
             GraphicalMessage.openException(e);
+            if (SplashPanel.frame != null && SplashPanel.frame.isVisible()) {
+                SplashPanel.frame.setAlwaysOnTop(false);
+                JOptionPane.showMessageDialog(null,
+                    "Fatal startup error: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+                System.exit(1);
+            }
         }
     }
 
@@ -157,7 +164,7 @@ public class Initiator {
 
     static void initProxy() {
         if (PublicValues.config.getBoolean(ConfigValues.proxy_enable.name)) {
-            SplashPanel.linfo.setText("Initializing proxy...");
+            SplashPanel.setStatus("Initializing proxy...");
             try {
                 OkHttpClient.Builder clientBuilder = PublicValues.defaultHttpClient.newBuilder();
                 clientBuilder.setProxyAuthenticator$okhttp(new Authenticator() {
@@ -233,9 +240,16 @@ public class Initiator {
     }
 
     static void detectOS() throws IOException {
-        SplashPanel.linfo.setText("Detecting operating system...");
+        SplashPanel.setStatus("Detecting operating system...");
         PublicValues.osType = libDetect.getDetectedOS();
         new SupportModuleLoader().loadModules();
+        if (PublicValues.osType == libDetect.OSType.Other) {
+            SplashPanel.frame.setAlwaysOnTop(false);
+            JOptionPane.showMessageDialog(null,
+                "Unsupported OS detected. Attempting to launch anyway — the application may be unstable.",
+                "Warning", JOptionPane.WARNING_MESSAGE);
+            SplashPanel.frame.setAlwaysOnTop(true);
+        }
         if(!Flags.linuxSupport) {
             if(PublicValues.osType == libDetect.OSType.Linux) {
                 JOptionPane.showMessageDialog(null, ApplicationUtils.getName() + " was built without Linux support", "Fatal error", JOptionPane.ERROR_MESSAGE);
@@ -251,7 +265,7 @@ public class Initiator {
     }
 
     static void detectArchitecture() {
-        SplashPanel.linfo.setText("Detecting architecture...");
+        SplashPanel.setStatus("Detecting architecture...");
         new ArchitectureDetection();
     }
 
@@ -297,39 +311,39 @@ public class Initiator {
     }
 
     static void initConfig() {
-        SplashPanel.linfo.setText("Initializing config...");
+        SplashPanel.setStatus("Initializing config...");
         PublicValues.config = new Config();
         PublicValues.config.checkConfig();
     }
 
     static void loadExtensions() {
-        SplashPanel.linfo.setText("Loading Extensions...");
+        SplashPanel.setStatus("Loading Extensions...");
         new Injector().autoInject();
     }
 
     static void initGEH() {
-        SplashPanel.linfo.setText("Setting up globalexceptionhandler...");
+        SplashPanel.setStatus("Setting up globalexceptionhandler...");
         Thread.setDefaultUncaughtExceptionHandler(new GlobalExceptionHandler());
     }
 
     static void storeArguments(String[] args) {
-        SplashPanel.linfo.setText("Storing program arguments...");
+        SplashPanel.setStatus("Storing program arguments...");
         PublicValues.args = args;
     }
 
     static void initLanguageSupport() {
-        SplashPanel.linfo.setText("Init Language...");
+        SplashPanel.setStatus("Init Language...");
         PublicValues.language = new libLanguage(Initiator.class);
         PublicValues.language.setLanguageFolder("lang");
     }
 
     static void setLanguage() {
-        SplashPanel.linfo.setText("Setting language...");
+        SplashPanel.setStatus("Setting language...");
         PublicValues.language.setNoAutoFindLanguage(libLanguage.Language.getCodeFromName(PublicValues.config.getString(ConfigValues.language.name)));
     }
 
     static void parseAudioQuality() {
-        SplashPanel.linfo.setText("Parsing audio quality info...");
+        SplashPanel.setStatus("Parsing audio quality info...");
         try {
             PublicValues.quality = Quality.valueOf(PublicValues.config.getString(ConfigValues.audioquality.name));
         } catch (Exception exception) {
@@ -340,7 +354,7 @@ public class Initiator {
     }
 
     static void checkSetup() {
-        SplashPanel.linfo.setText("Checking setup...");
+        SplashPanel.setStatus("Checking setup...");
         if (!PublicValues.foundSetupArgument) {
             try {
                 new Setup();
@@ -352,7 +366,7 @@ public class Initiator {
     }
 
     static void initThemes() {
-        SplashPanel.linfo.setText("Init Themes...");
+        SplashPanel.setStatus("Init Themes...");
         ThemeLoader loader = PublicValues.themeLoader;
         try {
             loader.loadTheme(PublicValues.config.getString(ConfigValues.theme.name));
@@ -380,19 +394,19 @@ public class Initiator {
     }
 
     static void addShutdownHook() {
-        SplashPanel.linfo.setText("Add shutdown hook...");
+        SplashPanel.setStatus("Add shutdown hook...");
         Runtime.getRuntime().addShutdownHook(hook);
     }
 
     static void createKeyListener() {
-        SplashPanel.linfo.setText("Creating keylistener...");
+        SplashPanel.setStatus("Creating keylistener...");
         new KeyListener().start();
     }
 
     static void initAPI() {
-        SplashPanel.linfo.setText("Creating api...");
+        SplashPanel.setStatus("Creating api...");
         InstanceManager.getPlayer();
-        SplashPanel.linfo.setText("Create advanced api key...");
+        SplashPanel.setStatus("Create advanced api key...");
         InstanceManager.getUnofficialSpotifyApi();
     }
 
@@ -410,12 +424,12 @@ public class Initiator {
     }
 
     static void initGUI() throws IOException {
-        SplashPanel.linfo.setText("Creating contentPanel...");
+        SplashPanel.setStatus("Creating contentPanel...");
         new ContentPanel().open();
     }
 
     static void initTrayIcon() {
-        SplashPanel.linfo.setText("Creating the tray icon...");
+        SplashPanel.setStatus("Creating the tray icon...");
         new BackgroundService().start();
     }
 }

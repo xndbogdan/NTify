@@ -45,10 +45,20 @@ public class HomePanel extends JScrollPane implements View {
     public static ContextMenu menu;
     public static Timer reloadTimer;
     public static TimerTask nextReload;
+    private volatile CompletableFuture<Boolean> homeFuture = new CompletableFuture<>();
+
+    private JLabel loadingLabel;
 
     public HomePanel() {
         content = new JPanel();
         content.setLayout(null);
+
+        loadingLabel = new JLabel("Loading...");
+        loadingLabel.setForeground(PublicValues.globalFontColor);
+        loadingLabel.setFont(new Font("Tahoma", Font.PLAIN, 16));
+        loadingLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        loadingLabel.setBounds(0, 40, 400, 30);
+        content.add(loadingLabel);
 
         reloadTimer = new Timer();
 
@@ -62,7 +72,9 @@ public class HomePanel extends JScrollPane implements View {
         setVisible(false);
         setViewportView(content);
 
-        CompletableFuture<Boolean> homeFuture = loadHome();
+        Events.subscribe(SpotifyXPEvents.playerReady.getName(), (data) -> {
+            homeFuture = loadHome();
+        });
 
         Events.subscribe(SpotifyXPEvents.onFrameVisible.getName(), (args) -> {
             Thread thread = new Thread(() -> {
@@ -213,6 +225,7 @@ public class HomePanel extends JScrollPane implements View {
                                 }
                                 break;
                             default:
+                                ContentPanel.ensureTrackPanel();
                                 ContentPanel.trackPanel.open(uri, ct);
                                 break;
                         }
@@ -241,6 +254,11 @@ public class HomePanel extends JScrollPane implements View {
 
     public void initializeContent() {
         if(!tab.isPresent()) return;
+
+        if (loadingLabel != null) {
+            content.remove(loadingLabel);
+            loadingLabel = null;
+        }
 
         int width = getWidth() - 32;
         int height = 261;

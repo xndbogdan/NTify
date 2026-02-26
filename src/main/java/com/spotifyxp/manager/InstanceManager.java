@@ -78,6 +78,7 @@ public class InstanceManager {
         if (player == null) {
             player = new Player();
             playerReady.set(true);
+            Events.triggerEvent(SpotifyXPEvents.playerReady.getName());
         }
         return player.getPlayer();
     }

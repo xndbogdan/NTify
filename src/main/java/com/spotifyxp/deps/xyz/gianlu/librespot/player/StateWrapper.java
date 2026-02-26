@@ -1052,7 +1052,12 @@ public class StateWrapper implements DeviceStateHandler.Listener, DealerClient.M
         }
 
         synchronized void setQueue(@Nullable List<ContextTrack> prevTracks, @Nullable List<ContextTrack> nextTracks) {
-            ContextTrack current = tracks.get(getCurrentTrackIndex());
+            if (tracks.isEmpty()) return;
+
+            int currentIndex = getCurrentTrackIndex();
+            if (currentIndex < 0 || currentIndex >= tracks.size()) return;
+
+            ContextTrack current = tracks.get(currentIndex);
 
             queue.clear();
             tracks.clear();

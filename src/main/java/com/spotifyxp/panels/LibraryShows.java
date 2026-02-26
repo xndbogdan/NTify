@@ -58,6 +58,7 @@ public class LibraryShows extends JScrollPane {
             public void mouseClicked(MouseEvent e) {
                 if(showsTable.getSelectedRow() == -1) return;
                 if(e.getClickCount() == 2) {
+                    ContentPanel.ensureTrackPanel();
                     ContentPanel.trackPanel.open(
                             showsUris.get(showsTable.getSelectedRow()).split(":")[2],
                             HomePanel.ContentTypes.show

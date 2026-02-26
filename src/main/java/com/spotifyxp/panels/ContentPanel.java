@@ -120,36 +120,37 @@ public class ContentPanel extends JPanel {
                 }
             }
         }, AWTEvent.KEY_EVENT_MASK);
-        SplashPanel.linfo.setText("Creating context menu items...");
+        SplashPanel.setStatus("Creating context menu items...");
         createContextMenuItems();
-        SplashPanel.linfo.setText("Creating menu bar...");
+        SplashPanel.setStatus("Creating menu bar...");
         createMenuBar();
-        SplashPanel.linfo.setText("Setting window size...");
+        SplashPanel.setStatus("Setting window size...");
         setPreferredSize(PublicValues.getApplicationDimensions());
         setLayout(null);
-        SplashPanel.linfo.setText("Creating errorDisplay...");
+        SplashPanel.setStatus("Creating errorDisplay...");
         createErrorDisplay();
-        SplashPanel.linfo.setText("Creating tabpanel...");
+        SplashPanel.setStatus("Creating tabpanel...");
         createTabPanel();
-        SplashPanel.linfo.setText("Creating playerarea...");
+        SplashPanel.setStatus("Creating playerarea...");
         createPlayerArea();
         // Lazy panel initialization - only create panels when first needed
         // Home panel is created first since it's the default view
-        SplashPanel.linfo.setText("Creating home...");
+        SplashPanel.setStatus("Creating home...");
         createHome();
-        SplashPanel.linfo.setText("Creating settingsPanel...");
+        SplashPanel.setStatus("Creating settingsPanel...");
         createSettings();
-        SplashPanel.linfo.setText("Making window interactive...");
+        SplashPanel.setStatus("Making window interactive...");
         createLegacy();
-        try {
-            PublicValues.countryCode = CountryCode.getByCode(PublicValues.session.countryCode());
-        } catch (NullPointerException e) {
-            ConsoleLogging.Throwable(e);
-            // Defaulting to United States
-            PublicValues.countryCode = CountryCode.US;
-        }
+        PublicValues.countryCode = CountryCode.US; // default until session ready
+        Events.subscribe(SpotifyXPEvents.playerReady.getName(), (data) -> {
+            try {
+                PublicValues.countryCode = CountryCode.getByCode(PublicValues.session.countryCode());
+            } catch (Exception e) {
+                ConsoleLogging.Throwable(e);
+            }
+        });
         Events.subscribe(SpotifyXPEvents.addtoqueue.getName(), data -> InstanceManager.getPlayer().getPlayer().addToQueue((String)data[0]));
-        SplashPanel.linfo.setText("Done building contentPanel");
+        SplashPanel.setStatus("Done building contentPanel");
         ConsoleLogging.info(PublicValues.language.translate("debug.buildcontentpanelend"));
     }
 
@@ -428,7 +429,7 @@ public class ContentPanel extends JPanel {
         });
         audioVisualizer.addActionListener(e -> {
             try {
-                PublicValues.visualizer.open();
+                PublicValues.getVisualizer().open();
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
@@ -606,7 +607,7 @@ public class ContentPanel extends JPanel {
         }
     }
 
-    private static void ensureTrackPanel() {
+    public static void ensureTrackPanel() {
         if (!trackPanelInitialized && trackPanel == null) {
             trackPanel = new TrackPanel();
             tabPanel.add(trackPanel);

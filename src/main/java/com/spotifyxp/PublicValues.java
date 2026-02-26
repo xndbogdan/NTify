@@ -92,11 +92,17 @@ public class PublicValues {
     public static boolean foundSetupArgument = false;
     public static Color globalFontColor = Color.black;
     public static LyricsDialog lyricsDialog = null;
-    public static Injector injector = new Injector();
+    public static Injector injector;
     public static ContentPanel contentPanel;
     public static ArgParser argParser = new ArgParser();
     public static boolean customSaveDir = false;
-    public static AudioVisualizer visualizer = new AudioVisualizer();
+    public static AudioVisualizer visualizer;
+    public static AudioVisualizer getVisualizer() {
+        if (visualizer == null) {
+            visualizer = new AudioVisualizer();
+        }
+        return visualizer;
+    }
     public static ArrayList<ContextMenu.GlobalContextMenuItem> globalContextMenuItems = new ArrayList<>();
     public static String tempPath = System.getenv("temp");
     public static ArrayList<ContextMenu> contextMenus = new ArrayList<>();

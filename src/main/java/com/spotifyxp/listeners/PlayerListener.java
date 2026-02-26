@@ -242,7 +242,7 @@ public class PlayerListener implements Player.EventsListener {
 
     @Override
     public void onPanicState(@NotNull Player player) {
-        GraphicalMessage.openException(new UnknownError("PanicState in PlayerListener"));
+        ConsoleLogging.warning("Player entered panic state, retrying...");
         PublicValues.blockLoading = false;
         pl.retry();
     }

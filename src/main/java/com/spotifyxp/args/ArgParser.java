@@ -94,6 +94,7 @@ public class ArgParser {
         arguments.add(new NoMediaControl());
         arguments.add(new RunUpdater());
         arguments.add(new SaveLog());
+        arguments.add(new Portable());
         arguments.add(new SetupComplete());
         arguments.add(new Help());
     }

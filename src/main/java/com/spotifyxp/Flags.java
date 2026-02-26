@@ -20,12 +20,3 @@ public class Flags {
     public static final boolean linuxSupport = false;
     public static final boolean videoPlaybackSupport = false;
 }
-
-
-
-
-
-
-
-
-

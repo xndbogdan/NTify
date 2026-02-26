@@ -89,6 +89,7 @@ public class SpotifyBrowseSection extends JScrollPane {
                     }
 
                     //This opens the track panel but additionally also hijacks the back button
+                    ContentPanel.ensureTrackPanel();
                     ContentPanel.trackPanel.open(entry, contentType, new Runnable() {
                         @Override
                         public void run() {
@@ -163,6 +164,7 @@ public class SpotifyBrowseSection extends JScrollPane {
                     }
 
                     //This opens the track panel but additionally also hijacks the back button
+                    ContentPanel.ensureTrackPanel();
                     ContentPanel.trackPanel.open(entry, contentType, new Runnable() {
                         @Override
                         public void run() {

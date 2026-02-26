@@ -47,11 +47,18 @@ public class BackgroundService {
         try {
             trayDialog = new SystemTrayDialog();
             trayDialog.add(new ImageIcon(ImageIO.read(Initiator.class.getResourceAsStream("/ntify.png"))), ApplicationUtils.getName());
+            trayDialog.addEntry("Show", e -> {
+                ContentPanel.frame.setVisible(true);
+                ContentPanel.frame.requestFocus();
+            });
+            trayDialog.addEntry("Quit", e -> System.exit(0));
             trayDialog.open(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    ContentPanel.frame.setVisible(true);
-                    ContentPanel.frame.requestFocus();
+                    if (e.getButton() == MouseEvent.BUTTON1) {
+                        ContentPanel.frame.setVisible(true);
+                        ContentPanel.frame.requestFocus();
+                    }
                 }
             });
         } catch (Exception e) {

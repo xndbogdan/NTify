@@ -248,6 +248,7 @@ public class ArtistPanel extends JScrollPane implements View {
                             return;
                     }
                     setVisible(false);
+                    ContentPanel.ensureTrackPanel();
                     ContentPanel.trackPanel.open(discoveredOnUriCache.get(discoveredOnTable.getSelectedRow()), contentType, new Runnable() {
                         @Override
                         public void run() {

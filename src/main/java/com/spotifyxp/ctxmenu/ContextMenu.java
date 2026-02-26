@@ -106,11 +106,13 @@ public class ContextMenu {
                     if(component instanceof JTable) {
                         JTable table = (JTable) component;
                         int rowToSelect = table.rowAtPoint(e.getPoint());
+                        if (rowToSelect < 0) return;
                         table.clearSelection();
                         table.setRowSelectionInterval(rowToSelect, rowToSelect);
                     }else if(component instanceof JList) {
                         JList<?> list = (JList<?>) component;
                         int rowToSelect = list.locationToIndex(e.getPoint());
+                        if (rowToSelect < 0) return;
                         list.clearSelection();
                         list.setSelectionInterval(rowToSelect, rowToSelect);
                     }

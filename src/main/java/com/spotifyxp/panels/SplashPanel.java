@@ -89,6 +89,11 @@ public class SplashPanel {
         frame.setLocation(frame.getLocation().x - frame.getWidth() / 2, frame.getLocation().y - frame.getHeight() / 2);
     }
 
+    public static void setStatus(String text) {
+        linfo.setText(text);
+        linfo.paintImmediately(linfo.getBounds());
+    }
+
     public static void hide() {
         frame.dispose();
     }

@@ -37,11 +37,21 @@ import java.util.function.Consumer;
  */
 public class ImageCache {
     private static final int MAX_SIZE = 50;
-    private static final ExecutorService executor = Executors.newFixedThreadPool(2, r -> {
-        Thread t = new Thread(r, "ImageCache-Loader");
-        t.setDaemon(true);
-        return t;
-    });
+    private static volatile ExecutorService executor;
+    private static ExecutorService getExecutor() {
+        if (executor == null) {
+            synchronized (ImageCache.class) {
+                if (executor == null) {
+                    executor = Executors.newFixedThreadPool(2, r -> {
+                        Thread t = new Thread(r, "ImageCache-Loader");
+                        t.setDaemon(true);
+                        return t;
+                    });
+                }
+            }
+        }
+        return executor;
+    }
 
     private static final LinkedHashMap<String, byte[]> cache =
             new LinkedHashMap<String, byte[]>(MAX_SIZE, 0.75f, true) {
@@ -65,7 +75,7 @@ public class ImageCache {
             }
         }
 
-        executor.submit(() -> {
+        getExecutor().submit(() -> {
             try {
                 URL imageUrl = new URL(url);
                 try (InputStream is = imageUrl.openStream();

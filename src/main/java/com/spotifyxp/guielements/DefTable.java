@@ -23,7 +23,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class DefTable extends JTable {
-    final RunnableQueue queue = new RunnableQueue(new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>()));
+    private static final ThreadPoolExecutor SHARED_EXECUTOR = new ThreadPoolExecutor(
+            1, 2, 30L, TimeUnit.SECONDS, new LinkedBlockingQueue<>()
+    );
+    static { SHARED_EXECUTOR.allowCoreThreadTimeOut(true); }
+    final RunnableQueue queue = new RunnableQueue(SHARED_EXECUTOR);
 
     @Override
     public boolean isCellEditable(int row, int column) {

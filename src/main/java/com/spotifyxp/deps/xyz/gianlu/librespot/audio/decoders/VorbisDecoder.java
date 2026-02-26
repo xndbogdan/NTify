@@ -25,6 +25,7 @@ import com.jcraft.jorbis.Comment;
 import com.jcraft.jorbis.DspState;
 import com.jcraft.jorbis.Info;
 import com.spotifyxp.PublicValues;
+import com.spotifyxp.visuals.AudioVisualizer;
 import com.spotifyxp.deps.xyz.gianlu.librespot.player.decoders.Decoder;
 import com.spotifyxp.deps.xyz.gianlu.librespot.player.decoders.SeekableInputStream;
 import com.spotifyxp.deps.xyz.gianlu.librespot.player.mixing.output.OutputAudioFormat;
@@ -220,8 +221,9 @@ public final class VorbisDecoder extends Decoder {
             int bytesToWrite = 2 * channels * range;
             out.write(convBuf, 0, bytesToWrite);
 
-            if (PublicValues.visualizer.isVisible()) {
-                PublicValues.visualizer.setBuffer(convBuf);
+            AudioVisualizer v = PublicValues.visualizer;
+            if (v != null && v.isVisible()) {
+                v.setBuffer(convBuf);
             }
 
             written += bytesToWrite;

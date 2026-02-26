@@ -23,3 +23,8 @@ ToDo
 /src/main/java/com/spotifyxp/deps/uk
 /src/main/resources/vlc
 /XPAirDebug.jar
+ntify-data/
+__pycache__/
+*.pyc
+jfr_stderr.log
+.claude/settings.local.json

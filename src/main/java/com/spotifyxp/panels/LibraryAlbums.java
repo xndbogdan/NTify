@@ -58,6 +58,7 @@ public class LibraryAlbums extends JScrollPane{
             @Override
             public void mouseClicked(MouseEvent e) {
                 if(e.getClickCount() == 2) {
+                    ContentPanel.ensureTrackPanel();
                     ContentPanel.trackPanel.open(albumsUris.get(albumsTable.getSelectedRow()), HomePanel.ContentTypes.album);
                 }
             }
@@ -148,7 +149,9 @@ public class LibraryAlbums extends JScrollPane{
                         public void run() {
                             String artists = "";
                             for(UnofficialSpotifyAPI.ArtistItem artist : album.artists.items) {
-                                artists += artist.data.profile.name + ", ";
+                                if (artist.data != null && artist.data.profile != null) {
+                                    artists += artist.data.profile.name + ", ";
+                                }
                             }
                             if (!artists.isEmpty())
                                 artists = artists.substring(0, artists.length() - 2);

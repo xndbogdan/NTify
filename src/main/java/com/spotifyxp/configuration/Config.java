@@ -43,12 +43,7 @@ public class Config {
                 putConfigValue(properties, value);
             }
             if (!new File(PublicValues.fileslocation).exists()) {
-                if (!new File(PublicValues.fileslocation).mkdir()) {
-                    GraphicalMessage.sorryErrorExit("Failed creating important directory");
-                }
-            }
-            if (!new File(PublicValues.fileslocation).exists()) {
-                if (!new File(PublicValues.fileslocation).mkdir()) {
+                if (!new File(PublicValues.fileslocation).mkdirs()) {
                     GraphicalMessage.sorryErrorExit("Failed creating important directory");
                 }
             }
@@ -85,7 +80,18 @@ public class Config {
                 where.addProperty(value.name, (Integer) value.defaultValue);
                 break;
             case CUSTOM:
-                ((CustomConfigValue<?>) value.defaultValue).writeDefault();
+                CustomConfigValue<?> custom = (CustomConfigValue<?>) value.defaultValue;
+                Object def = custom.getDefaultValue();
+                if (def instanceof String) {
+                    where.addProperty(value.name, (String) def);
+                } else if (def instanceof Integer) {
+                    where.addProperty(value.name, (Integer) def);
+                } else if (def instanceof Boolean) {
+                    where.addProperty(value.name, (Boolean) def);
+                } else if (def instanceof Double) {
+                    where.addProperty(value.name, (Double) def);
+                }
+                break;
         }
     }
 

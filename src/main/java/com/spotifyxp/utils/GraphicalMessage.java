@@ -61,10 +61,11 @@ public class GraphicalMessage {
     }
 
     public static void sorryErrorExit() {
-        if (SplashPanel.frame.isVisible()) {
+        java.awt.Component parent = ContentPanel.frame;
+        if (SplashPanel.frame != null && SplashPanel.frame.isVisible()) {
             SplashPanel.frame.setAlwaysOnTop(false);
         }
-        int selection = JOptionPane.showConfirmDialog(ContentPanel.frame, PublicValues.language.translate("critical.sorry.text"), PublicValues.language.translate("critical.sorry.title"), JOptionPane.OK_CANCEL_OPTION);
+        int selection = JOptionPane.showConfirmDialog(parent, PublicValues.language.translate("critical.sorry.text"), PublicValues.language.translate("critical.sorry.title"), JOptionPane.OK_CANCEL_OPTION);
         if (selection == JOptionPane.CANCEL_OPTION) {
             openException(new UnknownError());
             return;
@@ -73,10 +74,11 @@ public class GraphicalMessage {
     }
 
     public static void sorryErrorExit(String additional) {
-        if (SplashPanel.frame.isVisible()) {
+        java.awt.Component parent = ContentPanel.frame;
+        if (SplashPanel.frame != null && SplashPanel.frame.isVisible()) {
             SplashPanel.frame.setAlwaysOnTop(false);
         }
-        int selection = JOptionPane.showConfirmDialog(ContentPanel.frame, PublicValues.language.translate("critical.sorry.text") + " Additional Info => " + additional, PublicValues.language.translate("critical.sorry.title"), JOptionPane.OK_CANCEL_OPTION);
+        int selection = JOptionPane.showConfirmDialog(parent, PublicValues.language.translate("critical.sorry.text") + " Additional Info => " + additional, PublicValues.language.translate("critical.sorry.title"), JOptionPane.OK_CANCEL_OPTION);
         if (selection == JOptionPane.CANCEL_OPTION) {
             openException(new Throwable(additional));
             return;

@@ -121,6 +121,7 @@ public class PlaybackHistory {
                                     ContentPanel.showArtistPanel(data.getURI());
                                     break;
                                 case ALBUM:
+                                    ContentPanel.ensureTrackPanel();
                                     ContentPanel.trackPanel.open(data.getURI(), HomePanel.ContentTypes.album);
                                     break;
                                 case TRACK:

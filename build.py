@@ -133,3 +133,9 @@ with zipfile.ZipFile(JAR_PATH, "r") as jar_read:
 
 os.remove(JAR_PATH)
 os.rename(temp_zip_path, JAR_PATH)
+
+print("Writing start-portable.bat")
+with open("target/start-portable.bat", "w") as bat:
+    bat.write("@echo off\n")
+    bat.write("java -Xmx128m -jar NTify.jar --portable\n")
+    bat.write("pause\n")
