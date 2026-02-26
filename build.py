@@ -130,5 +130,6 @@ with zipfile.ZipFile(JAR_PATH, "r") as jar_read:
             file_info = jar_read.getinfo(file)
             with jar_read.open(file_info) as source:
                 temp_zip.writestr(file_info, source.read())
-    os.remove(JAR_PATH)
-    os.rename(temp_zip_path, JAR_PATH)
+
+os.remove(JAR_PATH)
+os.rename(temp_zip_path, JAR_PATH)

@@ -46,6 +46,30 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public class PlayerUtils {
+    // Shared thread pool for async operations
+    private static final java.util.concurrent.ExecutorService sharedExecutor =
+            java.util.concurrent.Executors.newCachedThreadPool(r -> {
+                Thread t = new Thread(r, "PlayerUtils-Worker");
+                t.setDaemon(true);
+                return t;
+            });
+
+    /**
+     * Execute a task asynchronously using the shared thread pool.
+     * @param task The task to execute
+     */
+    public static void executeAsync(Runnable task) {
+        sharedExecutor.execute(task);
+    }
+
+    /**
+     * Submit a task asynchronously using the shared thread pool.
+     * @param task The task to submit
+     * @return A CompletableFuture for the task
+     */
+    public static CompletableFuture<Void> submitAsync(Runnable task) {
+        return CompletableFuture.runAsync(task, sharedExecutor);
+    }
     Session authViaZeroconf(Session.Configuration configuration, EventSubscriber cancelCallback) throws InterruptedException, ExecutionException {
         CompletableFuture<Session> sessionFuture = new CompletableFuture<>();
         try (ZeroconfServer zeroconfServer = new ZeroconfServer.Builder(configuration)
@@ -177,7 +201,8 @@ public class PlayerUtils {
                     cancelRunnable[0].run();
                 },
                 data -> {
-                    Thread zeroconfthread = new Thread(() -> {
+                    // Use shared executor instead of creating new Thread
+                    executeAsync(() -> {
                         try {
                             Session session = authViaZeroconf(configuration, data2 -> {
                                 cancelRunnable[0] = (Runnable) data2[0];
@@ -187,13 +212,13 @@ public class PlayerUtils {
                             sessionFuture.completeExceptionally(e);
                         }
                     });
-                    zeroconfthread.start();
                 },
                 data -> {
                     cancelRunnable[0].run();
                 },
                 data -> {
-                    Thread oauthThread = new Thread(() -> {
+                    // Use shared executor instead of creating new Thread
+                    executeAsync(() -> {
                         try {
                             Session session = authViaOauth(configuration, callbackURL ->  {
                                 ((EventSubscriber) data[0]).run(callbackURL);
@@ -203,7 +228,6 @@ public class PlayerUtils {
                             sessionFuture.completeExceptionally(e);
                         }
                     });
-                    oauthThread.start();
                 }
         );
         synchronized (sessionFuture) {

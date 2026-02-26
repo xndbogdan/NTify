@@ -35,9 +35,12 @@ public class AudioVisualizer extends JPanel {
     private BufferedImage bufferImage;
     private final Timer renderTimer;
 
+    // Reduced from 75 FPS to 30 FPS to save CPU
+    private static final int TARGET_FPS = 30;
+
     public AudioVisualizer() {
         initColorPalette();
-        renderTimer = new Timer(1000 / 75, e -> {
+        renderTimer = new Timer(1000 / TARGET_FPS, e -> {
             resizeBufferImageIfNeeded();
             renderToBuffer();
             repaint();
@@ -65,9 +68,27 @@ public class AudioVisualizer extends JPanel {
             frame.add(this, BorderLayout.CENTER);
             frame.setSize(300, 300);
             frame.setLocationRelativeTo(null);
+            // Stop timer when window is closed to save CPU
+            frame.addWindowListener(new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowClosing(java.awt.event.WindowEvent e) {
+                    close();
+                }
+            });
         }
         frame.setVisible(true);
         renderTimer.start();
+    }
+
+    public void close() {
+        renderTimer.stop();
+        if (frame != null) {
+            frame.setVisible(false);
+        }
+    }
+
+    public boolean isRunning() {
+        return renderTimer.isRunning();
     }
 
     @Override

@@ -39,7 +39,8 @@ public enum SpotifyXPEvents {
     apikeyrefresh("apikeyrefresh", "Fires when the api key refreshes"),
     injectorAPIReady("injectorAPIReady", "Fires when the injector api class has finished initializing"),
     recalculateSizes("recalcSizes", "Fires when the sizes of the JComponent's should be recalculated"),
-    librarychange("librarychange", "Fires when something in the user's library changes");
+    librarychange("librarychange", "Fires when something in the user's library changes"),
+    playerReady("playerReady", "Fires when the player has finished async initialization");
 
     public String getName() {
         return name;

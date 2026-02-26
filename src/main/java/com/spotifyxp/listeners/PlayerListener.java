@@ -28,6 +28,7 @@ import com.spotifyxp.logging.ConsoleLogging;
 import com.spotifyxp.manager.InstanceManager;
 import com.spotifyxp.panels.PlayerArea;
 import com.spotifyxp.utils.GraphicalMessage;
+import com.spotifyxp.utils.ImageCache;
 import com.spotifyxp.utils.SVGUtils;
 import com.spotifyxp.utils.SpotifyUtils;
 import com.spotifyxp.utils.TrackUtils;
@@ -35,10 +36,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
-import java.net.URL;
+import java.io.InputStream;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class is the binding between the UI and librespot
@@ -49,26 +52,44 @@ public class PlayerListener implements Player.EventsListener {
     public static boolean pauseTimer = false;
     public static boolean locked = true;
 
-    class PlayerThread extends TimerTask {
-        public void run() {
-            if (!pauseTimer) {
-                if (!InstanceManager.getSpotifyPlayer().isPaused()) {
-                    try {
-                        PlayerArea.playerCurrentTime.setMaximum(TrackUtils.getSecondsFromMS(Objects.requireNonNull(pl.getPlayer().currentMetadata()).duration()));
-                        PlayerArea.playerCurrentTime.setValue(TrackUtils.getSecondsFromMS(pl.getPlayer().time()));
-                    } catch (NullPointerException ex) {
-                        //No song is playing
-                    }
-                }
+    private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "PlayerListener-Timer");
+        t.setDaemon(true);
+        return t;
+    });
+    private static ScheduledFuture<?> updateTask;
+
+    private void updatePlayerTime() {
+        if (!pauseTimer) {
+            try {
+                PlayerArea.playerCurrentTime.setMaximum(TrackUtils.getSecondsFromMS(Objects.requireNonNull(pl.getPlayer().currentMetadata()).duration()));
+                PlayerArea.playerCurrentTime.setValue(TrackUtils.getSecondsFromMS(pl.getPlayer().time()));
+            } catch (NullPointerException ex) {
+                //No song is playing
             }
         }
     }
 
-    public static Timer timer = new Timer();
+    public static void startUpdates(PlayerListener listener) {
+        if (updateTask == null || updateTask.isCancelled()) {
+            updateTask = executor.scheduleAtFixedRate(listener::updatePlayerTime, 0, 500, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    public static void pauseUpdates() {
+        if (updateTask != null && !updateTask.isCancelled()) {
+            updateTask.cancel(false);
+            updateTask = null;
+        }
+    }
+
+    public static void resumeUpdates(PlayerListener listener) {
+        startUpdates(listener);
+    }
 
     public PlayerListener(com.spotifyxp.api.Player p) {
         pl = p;
-        timer.schedule(new PlayerThread(), 0, 500);
+        startUpdates(this);
     }
 
     @Override
@@ -105,12 +126,14 @@ public class PlayerListener implements Player.EventsListener {
     @Override
     public void onPlaybackPaused(@NotNull Player player, long l) {
         PlayerArea.playerPlayPauseButton.setImage(Graphics.PLAYERPlAY.getPath());
+        pauseUpdates(); // Stop timer when paused to save CPU
         Events.triggerEvent(SpotifyXPEvents.playerpause.getName());
     }
 
     @Override
     public void onPlaybackResumed(@NotNull Player player, long l) {
         PlayerArea.playerPlayPauseButton.setImage(Graphics.PLAYERPAUSE.getPath());
+        resumeUpdates(this); // Resume timer when playing
         Events.triggerEvent(SpotifyXPEvents.playerresume.getName());
     }
 
@@ -155,12 +178,17 @@ public class PlayerListener implements Player.EventsListener {
             }
             PlayerArea.playerDescription.setText(artists.toString());
             try {
-                PlayerArea.playerImage.setImage(new URL(
-                        "https://i.scdn.co/image/" +
-                                Utils.bytesToHex(SpotifyUtils.getImageForSystem(track.getAlbum().getCoverGroup().getImageList()).getFileId()).toLowerCase()
-                ).openStream());
+                String imageUrl = "https://i.scdn.co/image/" +
+                        Utils.bytesToHex(SpotifyUtils.getImageForSystem(track.getAlbum().getCoverGroup().getImageList()).getFileId()).toLowerCase();
+                // Load image asynchronously using cache
+                ImageCache.loadAsync(imageUrl, (InputStream is) -> {
+                    if (is != null) {
+                        PlayerArea.playerImage.setImage(is);
+                    } else {
+                        PlayerArea.playerImage.setImage(SVGUtils.svgToImageInputStreamSameSize(Graphics.NOTHINGPLAYING.getInputStream(), PlayerArea.playerImage.getSize()));
+                    }
+                });
             } catch (Exception e) {
-                e.printStackTrace();
                 ConsoleLogging.warning("Failed to load cover for track");
                 PlayerArea.playerImage.setImage(SVGUtils.svgToImageInputStreamSameSize(Graphics.NOTHINGPLAYING.getInputStream(), PlayerArea.playerImage.getSize()));
             }
@@ -171,10 +199,16 @@ public class PlayerListener implements Player.EventsListener {
             PlayerArea.playerTitle.setText(episode.getName());
             PlayerArea.playerDescription.setText(episode.getShow().getPublisher());
             try {
-                PlayerArea.playerImage.setImage(new URL(
-                        "https://i.scdn.co/image/" +
-                                Utils.bytesToHex(SpotifyUtils.getImageForSystem(episode.getCoverImage().getImageList()).getFileId()).toLowerCase()
-                ).openStream());
+                String imageUrl = "https://i.scdn.co/image/" +
+                        Utils.bytesToHex(SpotifyUtils.getImageForSystem(episode.getCoverImage().getImageList()).getFileId()).toLowerCase();
+                // Load image asynchronously using cache
+                ImageCache.loadAsync(imageUrl, (InputStream is) -> {
+                    if (is != null) {
+                        PlayerArea.playerImage.setImage(is);
+                    } else {
+                        PlayerArea.playerImage.setImage(SVGUtils.svgToImageInputStreamSameSize(Graphics.NOTHINGPLAYING.getInputStream(), PlayerArea.playerImage.getSize()));
+                    }
+                });
             } catch (Exception e) {
                 ConsoleLogging.warning("Failed to load cover for episode");
                 PlayerArea.playerImage.setImage(SVGUtils.svgToImageInputStreamSameSize(Graphics.NOTHINGPLAYING.getInputStream(), PlayerArea.playerImage.getSize()));

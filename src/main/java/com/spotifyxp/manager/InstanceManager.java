@@ -17,7 +17,12 @@ package com.spotifyxp.manager;
 
 import com.spotifyxp.api.Player;
 import com.spotifyxp.api.UnofficialSpotifyAPI;
+import com.spotifyxp.events.Events;
+import com.spotifyxp.events.SpotifyXPEvents;
 import com.spotifyxp.utils.PlayerUtils;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class is a manager
@@ -29,23 +34,57 @@ public class InstanceManager {
     static Player player;
     static UnofficialSpotifyAPI unofficialSpotifyAPI;
     static PlayerUtils playerUtils;
+    static final AtomicBoolean playerReady = new AtomicBoolean(false);
+    static final AtomicBoolean playerInitializing = new AtomicBoolean(false);
+    static CompletableFuture<Player> playerFuture;
 
     public static Player getPlayer() {
         if (player == null) {
             player = new Player();
+            playerReady.set(true);
         }
         return player;
+    }
+
+    /**
+     * Initialize the player asynchronously.
+     * @return CompletableFuture that completes when player is ready
+     */
+    public static CompletableFuture<Player> getPlayerAsync() {
+        if (playerReady.get() && player != null) {
+            return CompletableFuture.completedFuture(player);
+        }
+
+        if (playerInitializing.compareAndSet(false, true)) {
+            playerFuture = CompletableFuture.supplyAsync(() -> {
+                player = new Player();
+                playerReady.set(true);
+                Events.triggerEvent(SpotifyXPEvents.playerReady.getName());
+                return player;
+            });
+        }
+
+        return playerFuture;
+    }
+
+    /**
+     * Check if the player has been initialized and is ready.
+     */
+    public static boolean isPlayerReady() {
+        return playerReady.get() && player != null;
     }
 
     public static com.spotifyxp.deps.xyz.gianlu.librespot.player.Player getSpotifyPlayer() {
         if (player == null) {
             player = new Player();
+            playerReady.set(true);
         }
         return player.getPlayer();
     }
 
     public static void setPlayer(Player p) {
         player = p;
+        playerReady.set(p != null);
     }
 
     public static UnofficialSpotifyAPI getUnofficialSpotifyApi() {
@@ -74,5 +113,8 @@ public class InstanceManager {
         player = null;
         unofficialSpotifyAPI = null;
         playerUtils = null;
+        playerReady.set(false);
+        playerInitializing.set(false);
+        playerFuture = null;
     }
 }

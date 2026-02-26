@@ -99,7 +99,7 @@ public class Initiator {
                     })
                     .build(); //Creating the default http client
             initProxy();
-            checkTrustStore();
+            checkTrustStoreAsync(); // Non-blocking SSL check
             checkUpdate();
             if (Flags.videoPlaybackSupport) initializeVideoPlayback();
             loadExtensions(); //Loading extensions if there are any
@@ -108,7 +108,6 @@ public class Initiator {
             parseAudioQuality(); //Parsing the audio quality
             initThemes(); //Initializing the theming support
             addShutdownHook(); //Adding the shutdown hook
-            initAPI(); //Initializing all the apis used
             if (PublicValues.enableMediaControl)
                 createKeyListener(); //Starting the key listener (For Play/Pause/Previous/Next)
             initTrayIcon(); //Creating the tray icon
@@ -119,31 +118,41 @@ public class Initiator {
                 GraphicalMessage.sorryError("Critical exception in GUI initialization");
             }
             SplashPanel.hide(); //Hiding the splash panel
+            // Initialize player async after GUI is visible for faster startup
+            initAPIAsync();
         }catch (Exception e) {
             ConsoleLogging.Throwable(e);
             GraphicalMessage.openException(e);
         }
     }
 
-    static void checkTrustStore() {
-        try {
-            Request request = new Request.Builder()
-                    .url("https://spclient.wg.spotify.com/reachability/check")
-                    .build();
+    static void checkTrustStoreAsync() {
+        // Run SSL check asynchronously to avoid blocking startup
+        CompletableFuture.runAsync(() -> {
+            try {
+                Request request = new Request.Builder()
+                        .url("https://spclient.wg.spotify.com/reachability/check")
+                        .build();
 
-            PublicValues.defaultHttpClient.newCall(request).execute();
-        }catch (SSLHandshakeException e) {
-            // TrustStore outdated
-            int response = JOptionPane.showConfirmDialog(null, "", "", JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
-            if (response == JOptionPane.OK_OPTION) {
-                try {
-                    Utils.openBrowser("https://github.com/JohnTHaller/RootCertificateUpdatesForLegacyWindows");
-                } catch (URISyntaxException | IOException ex) {
-                    throw new RuntimeException(ex);
-                }
+                PublicValues.defaultHttpClient.newCall(request).execute();
+            } catch (SSLHandshakeException e) {
+                // TrustStore outdated - show dialog on EDT
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    int response = JOptionPane.showConfirmDialog(null,
+                            "SSL certificates may be outdated. Update root certificates?",
+                            "SSL Certificate Warning",
+                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+                    if (response == JOptionPane.OK_OPTION) {
+                        try {
+                            Utils.openBrowser("https://github.com/JohnTHaller/RootCertificateUpdatesForLegacyWindows");
+                        } catch (URISyntaxException | IOException ex) {
+                            ConsoleLogging.Throwable(ex);
+                        }
+                    }
+                });
+            } catch (IOException ignored) {
             }
-        } catch (IOException ignored) {
-        }
+        });
     }
 
     static void initProxy() {
@@ -385,6 +394,19 @@ public class Initiator {
         InstanceManager.getPlayer();
         SplashPanel.linfo.setText("Create advanced api key...");
         InstanceManager.getUnofficialSpotifyApi();
+    }
+
+    static void initAPIAsync() {
+        // Initialize player asynchronously to avoid blocking UI
+        InstanceManager.getPlayerAsync().thenAccept(player -> {
+            ConsoleLogging.info("Player initialized asynchronously");
+            // Initialize unofficial API after player is ready
+            InstanceManager.getUnofficialSpotifyApi();
+        }).exceptionally(ex -> {
+            ConsoleLogging.Throwable((Throwable) ex);
+            GraphicalMessage.sorryError("Failed to initialize player");
+            return null;
+        });
     }
 
     static void initGUI() throws IOException {

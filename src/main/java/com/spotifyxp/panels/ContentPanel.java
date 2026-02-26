@@ -67,6 +67,18 @@ public class ContentPanel extends JPanel {
     public static final JMenuBar bar = new JMenuBar();
     public static final JFrame frame;
 
+    // Track which panels have been lazily initialized
+    private static boolean homeInitialized = false;
+    private static boolean browseInitialized = false;
+    private static boolean libraryInitialized = false;
+    private static boolean searchInitialized = false;
+    private static boolean hotListInitialized = false;
+    private static boolean queueInitialized = false;
+    private static boolean feedbackInitialized = false;
+    private static boolean artistInitialized = false;
+    private static boolean trackPanelInitialized = false;
+    private static boolean sectionPanelInitialized = false;
+
     static {
         try {
             frame = new JFrame(ApplicationUtils.getName() + " - " + ApplicationUtils.getVersion() + " " + ApplicationUtils.getReleaseCandidate());
@@ -121,26 +133,10 @@ public class ContentPanel extends JPanel {
         createTabPanel();
         SplashPanel.linfo.setText("Creating playerarea...");
         createPlayerArea();
-        SplashPanel.linfo.setText("Creating feedback...");
-        createFeedback();
-        SplashPanel.linfo.setText("Creating library...");
-        createLibrary();
-        SplashPanel.linfo.setText("Creating hotlist...");
-        createHotList();
-        SplashPanel.linfo.setText("Creating queue...");
-        createQueue();
-        SplashPanel.linfo.setText("Creating searchPanel...");
-        createSearchPanel();
-        SplashPanel.linfo.setText("Creating artistPanel...");
-        createArtistPanel();
-        SplashPanel.linfo.setText("Creating browse...");
-        createBrowse();
-        SplashPanel.linfo.setText("Creating browse section...");
-        createSectionPanel();
+        // Lazy panel initialization - only create panels when first needed
+        // Home panel is created first since it's the default view
         SplashPanel.linfo.setText("Creating home...");
         createHome();
-        SplashPanel.linfo.setText("Creating track panel...");
-        createTrackPanel();
         SplashPanel.linfo.setText("Creating settingsPanel...");
         createSettings();
         SplashPanel.linfo.setText("Making window interactive...");
@@ -194,7 +190,10 @@ public class ContentPanel extends JPanel {
     }
 
     public static void showArtistPanel(String fromUri) {
-        currentViewPanel.makeInvisible();
+        if (currentViewPanel != null) {
+            currentViewPanel.makeInvisible();
+        }
+        ensureArtistPanel();
         switchView(Views.ARTIST);
         try {
             artistPanel.fillWith(fromUri);
@@ -241,6 +240,7 @@ public class ContentPanel extends JPanel {
     void createHome() {
         homePanel = new HomePanel();
         tabPanel.add(homePanel);
+        homeInitialized = true;
     }
 
     void createBrowse() {
@@ -494,37 +494,132 @@ public class ContentPanel extends JPanel {
         currentView = view;
         switch (view) {
             case HOME:
+                ensureHomePanel();
                 currentViewPanel = homePanel;
                 break;
             case BROWSE:
+                ensureBrowsePanel();
                 currentViewPanel = browsePanel;
                 break;
             case TRACKPANEL:
+                ensureTrackPanel();
                 currentViewPanel = trackPanel;
                 break;
             case ARTIST:
+                ensureArtistPanel();
                 currentViewPanel = artistPanel;
                 break;
             case SEARCH:
+                ensureSearchPanel();
                 currentViewPanel = searchPanel;
                 break;
             case LIBRARY:
+                ensureLibraryPanel();
                 currentViewPanel = libraryPanel;
                 break;
             case QUEUE:
+                ensureQueuePanel();
                 currentViewPanel = queuePanel;
                 break;
             case HOTLIST:
+                ensureHotListPanel();
                 currentViewPanel = hotListPanel;
                 break;
             case FEEDBACK:
+                ensureFeedbackPanel();
                 currentViewPanel = feedbackPanel;
                 break;
             case BROWSESECTION:
+                ensureSectionPanel();
                 currentViewPanel = sectionPanel;
                 break;
         }
         currentViewPanel.makeVisible();
+    }
+
+    // Lazy initialization methods for panels
+    private static void ensureHomePanel() {
+        if (!homeInitialized && homePanel == null) {
+            homePanel = new HomePanel();
+            tabPanel.add(homePanel);
+            homeInitialized = true;
+        }
+    }
+
+    private static void ensureBrowsePanel() {
+        if (!browseInitialized && browsePanel == null) {
+            browsePanel = new BrowsePanel();
+            tabPanel.add(browsePanel);
+            browseInitialized = true;
+        }
+    }
+
+    private static void ensureLibraryPanel() {
+        if (!libraryInitialized && libraryPanel == null) {
+            libraryPanel = new Library();
+            tabPanel.add(libraryPanel);
+            libraryInitialized = true;
+        }
+    }
+
+    private static void ensureSearchPanel() {
+        if (!searchInitialized && searchPanel == null) {
+            searchPanel = new Search();
+            tabPanel.add(searchPanel);
+            searchInitialized = true;
+        }
+    }
+
+    private static void ensureHotListPanel() {
+        if (!hotListInitialized && hotListPanel == null) {
+            hotListPanel = new HotList();
+            tabPanel.add(hotListPanel);
+            hotListInitialized = true;
+        }
+    }
+
+    private static void ensureQueuePanel() {
+        if (!queueInitialized && queuePanel == null) {
+            try {
+                queuePanel = new Queue();
+                tabPanel.add(queuePanel);
+                queueInitialized = true;
+            } catch (IOException e) {
+                ConsoleLogging.Throwable(e);
+            }
+        }
+    }
+
+    private static void ensureFeedbackPanel() {
+        if (!feedbackInitialized && feedbackPanel == null) {
+            feedbackPanel = new Feedback();
+            tabPanel.add(feedbackPanel);
+            feedbackInitialized = true;
+        }
+    }
+
+    private static void ensureArtistPanel() {
+        if (!artistInitialized && artistPanel == null) {
+            artistPanel = new ArtistPanel();
+            tabPanel.add(artistPanel);
+            artistInitialized = true;
+        }
+    }
+
+    private static void ensureTrackPanel() {
+        if (!trackPanelInitialized && trackPanel == null) {
+            trackPanel = new TrackPanel();
+            tabPanel.add(trackPanel);
+            trackPanelInitialized = true;
+        }
+    }
+
+    private static void ensureSectionPanel() {
+        if (!sectionPanelInitialized && sectionPanel == null) {
+            sectionPanel = new SpotifySectionPanel();
+            tabPanel.add(sectionPanel);
+            sectionPanelInitialized = true;
+        }
     }
 
     void fixSize() {

@@ -203,7 +203,14 @@ public class PlayerArea extends JPanel {
         playerAreaVolumeSlider.setMinimum(0);
         playerAreaVolumeSlider.setMaximum(65536);
         playerAreaVolumeSlider.setValue(65536);
-        InstanceManager.getPlayer().getPlayer().setVolume(65536);
+        // Set initial volume when player is ready (async initialization)
+        Events.subscribe(SpotifyXPEvents.playerReady.getName(), data -> {
+            InstanceManager.getPlayer().getPlayer().setVolume(65536);
+        });
+        // Also handle case where player is already ready
+        if (InstanceManager.isPlayerReady()) {
+            InstanceManager.getPlayer().getPlayer().setVolume(65536);
+        }
         playerAreaVolumeSlider.addChangeListener(e -> {
             if (playerAreaVolumeSlider.getValue() == 0) {
                 // Mute
@@ -250,7 +257,7 @@ public class PlayerArea extends JPanel {
                 playerAreaVolumeCurrent.setText("10");
                 playerAreaVolumeIcon.setImage(Graphics.VOLUMEFULL.getPath());
             }
-            if(!playerAreaVolumeSlider.getValueIsAdjusting()) {
+            if(!playerAreaVolumeSlider.getValueIsAdjusting() && InstanceManager.isPlayerReady()) {
                 InstanceManager.getPlayer().getPlayer().setVolume(playerAreaVolumeSlider.getValue());
             }
         });

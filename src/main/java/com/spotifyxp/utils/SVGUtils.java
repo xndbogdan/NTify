@@ -31,11 +31,40 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class SVGUtils {
+    private static final int CACHE_SIZE = 100;
+
+    // Cache for transcoded PNG data, keyed by SVG content hash + dimensions
+    private static final LinkedHashMap<String, byte[]> pngCache =
+            new LinkedHashMap<String, byte[]>(CACHE_SIZE, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, byte[]> eldest) {
+                    return size() > CACHE_SIZE;
+                }
+            };
+
+    // Reusable parser class name
+    private static final String parser = XMLResourceDescriptor.getXMLParserClassName();
+
+    private static String getCacheKey(String svgContent, int width, int height) {
+        return svgContent.hashCode() + "_" + width + "x" + height;
+    }
     public static ImageIcon svgToImageIcon(InputStream stream, int width, int height) {
         try {
             String svgContent = IOUtils.toString(stream, Charset.defaultCharset());
+            String cacheKey = getCacheKey(svgContent, width, height);
+
+            // Check cache first
+            synchronized (pngCache) {
+                byte[] cached = pngCache.get(cacheKey);
+                if (cached != null) {
+                    return new ImageIcon(cached);
+                }
+            }
+
             // Create a transcoder for PNG output
             Transcoder transcoder = new PNGTranscoder();
 
@@ -44,7 +73,6 @@ public class SVGUtils {
             transcoder.addTranscodingHint(PNGTranscoder.KEY_HEIGHT, (float) height);
 
             // Create a document from the SVG content
-            String parser = XMLResourceDescriptor.getXMLParserClassName();
             SAXSVGDocumentFactory factory = new SAXSVGDocumentFactory(parser);
             Document document = factory.createDocument(null, new ByteArrayInputStream(svgContent.getBytes()));
 
@@ -59,6 +87,11 @@ public class SVGUtils {
 
             // Get the PNG data
             byte[] pngImageData = ((java.io.ByteArrayOutputStream) transcoderOutput.getOutputStream()).toByteArray();
+
+            // Store in cache
+            synchronized (pngCache) {
+                pngCache.put(cacheKey, pngImageData);
+            }
 
             // Create an ImageIcon from the PNG data
             return new ImageIcon(pngImageData);
@@ -75,6 +108,16 @@ public class SVGUtils {
     public static InputStream svgToImageInputStreamSameSize(InputStream stream, Dimension size) {
         try {
             String svgContent = IOUtils.toString(stream, Charset.defaultCharset());
+            String cacheKey = getCacheKey(svgContent, size.width, size.height);
+
+            // Check cache first
+            synchronized (pngCache) {
+                byte[] cached = pngCache.get(cacheKey);
+                if (cached != null) {
+                    return new ByteArrayInputStream(cached);
+                }
+            }
+
             // Create a transcoder for PNG output
             Transcoder transcoder = new PNGTranscoder();
 
@@ -83,7 +126,6 @@ public class SVGUtils {
             transcoder.addTranscodingHint(PNGTranscoder.KEY_HEIGHT, (float) size.height);
 
             // Create a document from the SVG content
-            String parser = XMLResourceDescriptor.getXMLParserClassName();
             SAXSVGDocumentFactory factory = new SAXSVGDocumentFactory(parser);
             Document document = factory.createDocument(null, new ByteArrayInputStream(svgContent.getBytes()));
 
@@ -99,10 +141,24 @@ public class SVGUtils {
             // Get the PNG data
             byte[] pngImageData = ((java.io.ByteArrayOutputStream) transcoderOutput.getOutputStream()).toByteArray();
 
-            // Create an ImageIcon from the PNG data
+            // Store in cache
+            synchronized (pngCache) {
+                pngCache.put(cacheKey, pngImageData);
+            }
+
+            // Return as InputStream
             return new ByteArrayInputStream(pngImageData);
         } catch (IOException | TranscoderException ex) {
             throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * Clear the SVG cache.
+     */
+    public static void clearCache() {
+        synchronized (pngCache) {
+            pngCache.clear();
         }
     }
 }
